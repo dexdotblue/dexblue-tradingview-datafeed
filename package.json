@@ -1,0 +1,21 @@
+{
+  "name": "dexblue-tradingview-datafeed",
+  "version": "0.1.0",
+  "description": "dex.blue tradingview datafeed",
+  "scripts": {
+    "build": "rollup -c rollup.config.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dexdotblue/dexblue-tradingview-datafeed.git"
+  },
+  "author": "dex.blue",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dexdotblue/dexblue-tradingview-datafeed/issues"
+  },
+  "homepage": "https://github.com/dexdotblue/dexblue-tradingview-datafeed#readme",
+  "devDependencies": {
+    "rollup": "^1.29.1"
+  }
+}
