@@ -6,7 +6,7 @@ class dexblueTVDatafeed {
     constructor(dbAPI) {
         console.log("new datafeed")
         this.db = dbAPI;
-        
+
         this.barSubscriptions = {};
     }
 
@@ -56,16 +56,14 @@ class dexblueTVDatafeed {
             market: symbolInfo.ticker,
             precision: resolution + "m"
         }).then(({ parsed }) => {
-            let tvBars = parsed.bars.map(bar => {
-                return {
+            let tvBars = parsed.bars.map(bar => ({
                     time: bar.timestamp * 1000,
                     low: bar.low,
                     high: bar.high,
                     open: bar.open,
                     close: bar.close,
                     volume: bar.tradedVolume
-                }
-            }).reverse()
+            })).reverse()
 
             onHistoryCallback(tvBars, { noData: parsed.last })
         }).catch(error => {
