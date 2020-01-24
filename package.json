@@ -7,6 +7,15 @@
     "build": "rollup -c rollup.config.js",
     "release": "npm run build && npm publish"
   },
+  "files":[
+    "dist",
+    "src",
+    ".eslintrc.js",
+    "rollup.config.js",
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dexdotblue/dexblue-tradingview-datafeed.git"
