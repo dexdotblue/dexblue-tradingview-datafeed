@@ -1,10 +1,13 @@
 "use strict";
 
-class Datafeed {
+import * as utils from './utils'
+
+class dexblueTVDatafeed {
     constructor(dbAPI) {
         console.log("new datafeed")
         this.db = dbAPI;
-        TouchList
+        
+        this.barSubscriptions = {};
     }
 
     onReady(callback) {
@@ -12,73 +15,59 @@ class Datafeed {
         callback({
             supports_search: false,
             supports_marks: false,
-            exchanges: [
-                { value: "", name: "All Exchanges", desc: "" },
-                { value: "XETRA", name: "XETRA", desc: "XETRA" },
-                { value: "NSE", name: "NSE", desc: "NSE" }
-            ],
-            symbolsTypes: [
-                { name: "All types", value: "" },
-                { name: "Stock", value: "stock" },
-                { name: "Index", value: "index" }
-            ],
+            exchanges: [],
+            symbolsTypes: [],
             supports_time: false,
             supportedResolutions: ["1", "15", "30", "60", "1D", "2D", "3D", "1W", "3W", "1M", '6M']
         })
     }
 
     resolveSymbol(symbolName, onSymbolResolvedCallback, onResolveErrorCallback) {
-        console.log("get symbol", symbolName);
-        onSymbolResolvedCallback({
-            name: symbolName,
-            description: '',
-            type: 'crypto',
-            session: '24x7',
-            timezone: 'Etc/UTC',
-            ticker: symbolName,
-            minmov: 1,
-            pricescale: 100000000,
-            has_intraday: true,
-            intraday_multipliers: ['1', '60'],
-            supported_resolution: ["1"],
-            volume_precision: 8,
-            data_status: 'streaming',
-            has_empty_bars: true
-        })
+        let { traded, quote } = utils.extractMarketTokens(symbolName)
 
+        this.db.methods.getTokenInfo({
+            token: quote
+        }).then(({ parsed }) => {
+            console.log("get symbol", parsed);
+            onSymbolResolvedCallback({
+                name: `${traded}/${quote}`,
+                ticker: traded + quote,
+                currency_code: quote,
+                type: 'crypto',
+                session: '24x7',
+                timezone: 'Etc/UTC',
+                minmov: 1,
+                pricescale: 1000000,
+                has_intraday: true,
+                volume_precision: 8,
+                data_status: 'streaming'
+            })
+        }).catch(error => {
+            console.error(error);
+            onResolveErrorCallback(error);
+        })
     }
 
     getBars(symbolInfo, resolution, from, to, onHistoryCallback, onErrorCallback, firstDataRequest) {
         console.log("get bars", symbolInfo, resolution, from, to)
         this.db.methods.getBarData({
-            from : parseInt(from),
-            to   : parseInt(to + 59),
-            market : symbolInfo.ticker,
-            precision : resolution + "m"
-        }).then(bars => {
-            console.log("got bars", "length:", bars.parsed.bars.length)
-            console.log(onHistoryCallback)
-            let tvBars = []
-
-            
-            for(let i in bars.parsed.bars){
-                let bar = bars.parsed.bars[i]
-                
-                tvBars.push({
-                    time: bar.timestamp * 1000, //TradingView requires bar time in ms
+            from: parseInt(from),
+            to: parseInt(to + 59),
+            market: symbolInfo.ticker,
+            precision: resolution + "m"
+        }).then(({ parsed }) => {
+            let tvBars = parsed.bars.map(bar => {
+                return {
+                    time: bar.timestamp * 1000,
                     low: bar.low,
                     high: bar.high,
                     open: bar.open,
                     close: bar.close,
-                    volume: bar.tradedVolume 
-                })
-            }
-            tvBars.reverse()
-            console.log("bars", tvBars)
-            console.log("last bar", tvBars[0])
-            console.log(onHistoryCallback)
-            onHistoryCallback(tvBars, {noData: bars.parsed.last})
+                    volume: bar.tradedVolume
+                }
+            }).reverse()
 
+            onHistoryCallback(tvBars, { noData: parsed.last })
         }).catch(error => {
             console.error(error);
             onErrorCallback(error);
@@ -86,31 +75,47 @@ class Datafeed {
     }
 
     subscribeBars(symbolInfo, resolution, onRealtimeCallback, subscriberUID, onResetCacheNeededCallback) {
+        console.log("subscribe bars", symbolInfo, resolution, subscriberUID)
+
         this.db.methods.subscribe({
-            "markets": [symbolInfo.name],
+            "markets": [symbolInfo.ticker],
             "events": ["barData1m"]
         })
-        this.db.on("bar", (market, event, packet, bar) => {
+
+        const callback = (market, event, packet, bar) => {
+            if(symbolInfo.ticker != market) return
             onRealtimeCallback({
-                time: (bar.timestamp) * 1000,
+                time: bar.timestamp * 1000,
                 low: bar.low,
                 high: bar.high,
                 open: bar.open,
                 close: bar.close,
-                volume: bar.tradedVolume 
+                volume: bar.tradedVolume
             })
             console.log("got bar subscription", bar)
-        })
-        console.log("subscribe bars", symbolInfo, resolution, subscriberUID)
+        }
+
+        this.barSubscriptions[subscriberUID] = {
+            markets: [symbolInfo.ticker],
+            events: ["barData1m"],
+            callback: callback
+        }
+
+        this.db.on("bar", this.barSubscriptions[subscriberUID].callback)
     }
 
-    // calculateHistoryDepth(resolution, resolutionBack, intervalBack) {
-    //     console.log("calc hoistory depth", resolution, resolutionBack, intervalBack)
-    //     return {
-    //         resolutionBack: resolution,
-    //         intervalBack: 100
-    //     };
-    // }
+    unsubscribeBars(subscriberUID) {
+        
+        let { markets, events, callback } = this.barSubscriptions[subscriberUID]
+        console.log("unsubscribe bars", subscriberUID, markets, events, callback)
+        this.db.methods.unSubscribe({
+            markets: markets,
+            events: events
+        })
+
+        this.db.clear("bar", callback)
+        delete this.barSubscriptions[subscriberUID]
+    }
 }
 
-export default Datafeed;
+export default dexblueTVDatafeed;
