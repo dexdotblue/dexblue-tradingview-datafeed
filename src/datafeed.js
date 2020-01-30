@@ -1,6 +1,6 @@
 "use strict";
 
-import {extractMarketTokens, makeBarSubscription} from './utils'
+import {extractMarketTokens} from './utils'
 
 const precisions = {
     "1": "1m",
@@ -19,9 +19,11 @@ const precisions = {
 };
 
 class dexblueTVDatafeed {
-    constructor(dbAPI) {
-        console.log("new datafeed")
-        this.db = dbAPI;
+    constructor(dbAPI, source = "internal") {
+        console.log("new datafeed");
+
+        this.source = source;
+        this.db     = dbAPI;
 
         this.barSubscriptions = {};
     }
@@ -67,6 +69,7 @@ class dexblueTVDatafeed {
     getBars(symbolInfo, resolution, from, to, onHistoryCallback, onErrorCallback, firstDataRequest) {
         console.log("get bars", symbolInfo, resolution, from, to)
         this.db.methods.getBarData({
+            source: this.source,
             from: parseInt(from),
             to: parseInt(to + 59),
             market: symbolInfo.ticker,
@@ -93,7 +96,7 @@ class dexblueTVDatafeed {
 
         this.db.methods.subscribe({
             "markets": [symbolInfo.ticker],
-            "events": [makeBarSubscription(precisions[resolution])]
+            "events": [this.makeBarSubscription(resolution)]
         })
 
         const callback = (market, event, packet, bar) => {
@@ -111,7 +114,7 @@ class dexblueTVDatafeed {
 
         this.barSubscriptions[subscriberUID] = {
             markets: [symbolInfo.ticker],
-            events: [makeBarSubscription(precisions[resolution])],
+            events: [this.makeBarSubscription(resolution)],
             callback: callback
         }
 
@@ -129,6 +132,10 @@ class dexblueTVDatafeed {
 
         this.db.clear("bar", callback)
         delete this.barSubscriptions[subscriberUID]
+    }
+
+    makeBarSubscription(precision) {
+        return `${this.source == "internal" ? "b" : this.source + "B"}arData${precisions[precision]}`;
     }
 }
 
