@@ -1,13 +1,13 @@
 {
   "name": "dexblue-tradingview-datafeed",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "dex.blue tradingview datafeed",
   "main": "index.js",
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "release": "npm run build && npm publish"
   },
-  "files":[
+  "files": [
     "dist",
     "src",
     ".eslintrc.js",
