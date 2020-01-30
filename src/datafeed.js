@@ -1,6 +1,22 @@
 "use strict";
 
-import * as utils from './utils'
+import {extractMarketTokens, makeBarSubscription} from './utils'
+
+const precisions = {
+    "1": "1m",
+    "3": "3m",
+    "5": "5m",
+    "15": "15m",
+    "30": "30m",
+    "60": "1h",
+    "120": "2h",
+    "240": "4h",
+    "360": "6h",
+    "720": "12h",
+    "1D": "1d",
+    "3D": "3d",
+    "1W": "1w",
+};
 
 class dexblueTVDatafeed {
     constructor(dbAPI) {
@@ -18,12 +34,12 @@ class dexblueTVDatafeed {
             exchanges: [],
             symbolsTypes: [],
             supports_time: false,
-            supportedResolutions: ["1", "15", "30", "60", "1D", "2D", "3D", "1W", "3W", "1M", '6M']
+            supportedResolutions: Object.keys(precisions)
         })
     }
 
     resolveSymbol(symbolName, onSymbolResolvedCallback, onResolveErrorCallback) {
-        let { traded, quote } = utils.extractMarketTokens(symbolName)
+        let { traded, quote } = extractMarketTokens(symbolName)
 
         this.db.methods.getTokenInfo({
             token: quote
@@ -54,7 +70,7 @@ class dexblueTVDatafeed {
             from: parseInt(from),
             to: parseInt(to + 59),
             market: symbolInfo.ticker,
-            precision: resolution + "m"
+            precision: precisions[resolution]
         }).then(({ parsed }) => {
             let tvBars = parsed.bars.map(bar => ({
                     time: bar.timestamp * 1000,
@@ -77,7 +93,7 @@ class dexblueTVDatafeed {
 
         this.db.methods.subscribe({
             "markets": [symbolInfo.ticker],
-            "events": ["barData1m"]
+            "events": [makeBarSubscription(precisions[resolution])]
         })
 
         const callback = (market, event, packet, bar) => {
@@ -95,7 +111,7 @@ class dexblueTVDatafeed {
 
         this.barSubscriptions[subscriberUID] = {
             markets: [symbolInfo.ticker],
-            events: ["barData1m"],
+            events: [makeBarSubscription(precisions[resolution])],
             callback: callback
         }
 
