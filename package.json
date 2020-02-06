@@ -4,8 +4,9 @@
   "description": "dex.blue tradingview datafeed",
   "main": "index.js",
   "scripts": {
-    "build": "rollup -c rollup.config.js --compact",
-    "release": "npm run build && npm publish"
+    "build": "rollup -c rollup.config.js",
+    "build:prod": "NODE_ENV=prod rollup -c rollup.config.js --compact",
+    "release": "npm run build:prod && npm publish"
   },
   "files": [
     "dist",
