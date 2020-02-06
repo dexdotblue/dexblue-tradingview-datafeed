@@ -1,6 +1,6 @@
 "use strict";
 
-import {extractMarketTokens} from './utils'
+import { extractMarketTokens } from './utils'
 
 const resolutionMap = {
     "1": "1m",
@@ -22,7 +22,7 @@ class dexblueTVDatafeed {
     constructor(dbAPI, source = "internal", resolutions = resolutionMap) {
         this.source = source;
         this.resolutions = resolutions
-        this.db     = dbAPI;
+        this.db = dbAPI;
 
         this.barSubscriptions = {};
     }
@@ -41,11 +41,8 @@ class dexblueTVDatafeed {
 
     resolveSymbol(symbolName, onSymbolResolvedCallback, onResolveErrorCallback) {
         let { traded, quote } = extractMarketTokens(symbolName)
-
-        this.db.methods.getTokenInfo({
-            token: quote
-        }).then(({ parsed }) => {
-            console.log("get symbol", parsed);
+        console.log("get symbol", symbolName);
+        this.db.methods.getTicker({ source: this.source, market: traded + quote }).then(({ parsed }) => {
             onSymbolResolvedCallback({
                 name: `${traded}/${quote}`,
                 ticker: traded + quote,
@@ -54,7 +51,7 @@ class dexblueTVDatafeed {
                 session: '24x7',
                 timezone: 'Etc/UTC',
                 minmov: 1,
-                pricescale: 1000000,
+                pricescale: 10 ** this.getDecimals(parsed.rate.toString()),
                 has_intraday: true,
                 volume_precision: 8,
                 data_status: 'streaming'
@@ -75,12 +72,12 @@ class dexblueTVDatafeed {
             precision: this.resolutions[resolution]
         }).then(({ parsed }) => {
             let tvBars = parsed.bars.map(bar => ({
-                    time: bar.timestamp * 1000,
-                    low: bar.low,
-                    high: bar.high,
-                    open: bar.open,
-                    close: bar.close,
-                    volume: bar.tradedVolume
+                time: bar.timestamp * 1000,
+                low: bar.low,
+                high: bar.high,
+                open: bar.open,
+                close: bar.close,
+                volume: bar.tradedVolume
             })).reverse()
 
             onHistoryCallback(tvBars, { noData: parsed.last })
@@ -99,7 +96,7 @@ class dexblueTVDatafeed {
         })
 
         const callback = (market, event, packet, bar) => {
-            if(symbolInfo.ticker != market) return
+            if (symbolInfo.ticker != market) return
             onRealtimeCallback({
                 time: bar.timestamp * 1000,
                 low: bar.low,
@@ -121,7 +118,6 @@ class dexblueTVDatafeed {
     }
 
     unsubscribeBars(subscriberUID) {
-        
         let { markets, events, callback } = this.barSubscriptions[subscriberUID]
         console.log("unsubscribe bars", subscriberUID, markets, events, callback)
         this.db.methods.unSubscribe({
@@ -135,6 +131,11 @@ class dexblueTVDatafeed {
 
     makeBarSubscription(precision) {
         return `${this.source == "internal" ? "b" : this.source + "B"}arData${this.resolutions[precision]}`;
+    }
+
+    getDecimals(value) {
+        if (Math.floor(value) === value) return 0;
+        return value.toString().split(".")[1].length || 0;
     }
 }
 
