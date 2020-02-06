@@ -2,7 +2,7 @@
 
 import {extractMarketTokens} from './utils'
 
-const precisions = {
+const resolutionMap = {
     "1": "1m",
     "3": "3m",
     "5": "5m",
@@ -19,10 +19,9 @@ const precisions = {
 };
 
 class dexblueTVDatafeed {
-    constructor(dbAPI, source = "internal") {
-        console.log("new datafeed");
-
+    constructor(dbAPI, source = "internal", resolutions = resolutionMap) {
         this.source = source;
+        this.resolutions = resolutions
         this.db     = dbAPI;
 
         this.barSubscriptions = {};
@@ -36,7 +35,7 @@ class dexblueTVDatafeed {
             exchanges: [],
             symbolsTypes: [],
             supports_time: false,
-            supportedResolutions: Object.keys(precisions)
+            supported_resolutions: Object.keys(this.resolutions)
         })
     }
 
@@ -73,7 +72,7 @@ class dexblueTVDatafeed {
             from: parseInt(from),
             to: parseInt(to + 59),
             market: symbolInfo.ticker,
-            precision: precisions[resolution]
+            precision: this.resolutions[resolution]
         }).then(({ parsed }) => {
             let tvBars = parsed.bars.map(bar => ({
                     time: bar.timestamp * 1000,
@@ -135,7 +134,7 @@ class dexblueTVDatafeed {
     }
 
     makeBarSubscription(precision) {
-        return `${this.source == "internal" ? "b" : this.source + "B"}arData${precisions[precision]}`;
+        return `${this.source == "internal" ? "b" : this.source + "B"}arData${this.resolutions[precision]}`;
     }
 }
 
