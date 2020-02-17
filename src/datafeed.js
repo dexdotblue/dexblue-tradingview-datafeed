@@ -53,7 +53,7 @@ class dexblueTVDatafeed {
                 session: '24x7',
                 timezone: 'Etc/UTC',
                 minmov: 1,
-                pricescale: 10 ** this.getDecimals(parsed.rate.toString()),
+                pricescale: this.getDecimals(parsed.rate.toString()),
                 has_intraday: true,
                 volume_precision: 8,
                 data_status: 'streaming'
