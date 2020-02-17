@@ -46,7 +46,9 @@ class dexblueTVDatafeed {
             onSymbolResolvedCallback({
                 name: `${traded}/${quote}`,
                 ticker: traded + quote,
+                description: (traded + "/" + quote),
                 currency_code: quote,
+                exchange: 'dex.blue',
                 type: 'crypto',
                 session: '24x7',
                 timezone: 'Etc/UTC',
