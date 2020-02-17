@@ -1,6 +1,6 @@
 {
   "name": "dexblue-tradingview-datafeed",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "dex.blue tradingview datafeed",
   "main": "index.js",
   "scripts": {
