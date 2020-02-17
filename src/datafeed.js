@@ -134,8 +134,9 @@ class dexblueTVDatafeed {
     }
 
     getDecimals(value) {
-        if (Math.floor(value) === value) return 0;
-        return value.toString().split(".")[1].length || 0;
+        // if (Math.floor(value) === value) return 0;
+        let val = value.toString().split(".")[1].length || 1
+        return Math.pow(10, val)
     }
 }
 
