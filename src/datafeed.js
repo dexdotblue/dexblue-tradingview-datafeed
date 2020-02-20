@@ -40,13 +40,17 @@ class dexblueTVDatafeed {
     }
 
     resolveSymbol(symbolName, onSymbolResolvedCallback, onResolveErrorCallback) {
+        if (symbolName.split(":")[1] !== undefined) { // workaround for tradingviews EXCHANGE:AMRKET format
+            symbolName = symbolName.split(":")[1]
+        }
+
         let { traded, quote } = extractMarketTokens(symbolName)
         console.log("get symbol", symbolName);
         this.db.methods.getTicker({ source: this.source, market: traded + quote }).then(({ parsed }) => {
             onSymbolResolvedCallback({
                 name: `${traded}/${quote}`,
                 ticker: traded + quote,
-                description: (traded + "/" + quote),
+                description: `${traded}/${quote}`,
                 currency_code: quote,
                 exchange: 'dex.blue',
                 type: 'crypto',
