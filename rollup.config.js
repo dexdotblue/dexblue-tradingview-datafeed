@@ -14,7 +14,9 @@ export default {
 		format: "umd"
 	},
 	plugins: [
-		strip(),
+		strip({
+			functions: ["console.log"]
+		}),
 		resolve({ main: true }),
 		buble(),
 		!isDevelopmentEnv && terser(),
